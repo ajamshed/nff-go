@@ -176,6 +176,7 @@ type scheduler struct {
 type core struct {
 	id     int
 	isfree bool
+	numaNode int
 }
 
 func newScheduler(cpus []int, schedulerOff bool, schedulerOffRemove bool, stopDedicatedCore bool,
@@ -185,7 +186,11 @@ func newScheduler(cpus []int, schedulerOff bool, schedulerOffRemove bool, stopDe
 	scheduler := new(scheduler)
 	scheduler.cores = make([]core, coresNumber, coresNumber)
 	for i, cpu := range cpus {
-		scheduler.cores[i] = core{id: cpu, isfree: true}
+		numaId, err := low.GetCoreNumaUnit(cpu)
+		if err != nil {
+			panic(err)
+		}
+		scheduler.cores[i] = core{id: cpu, isfree: true, numaNode: numaId}
 	}
 	scheduler.off = schedulerOff
 	scheduler.offRemove = schedulerOff || schedulerOffRemove
@@ -251,7 +256,7 @@ func (ff *flowFunction) startNewInstance(inIndex []int32, scheduler *scheduler) 
 
 func (ffi *instance) startNewClone(scheduler *scheduler, n int) (err error) {
 	ff := ffi.ff
-	core, index, err := scheduler.getCore()
+	core, index, err := scheduler.getCoreNumaNode(0)
 	if err != nil {
 		common.LogWarning(common.Debug, "Can't start new clone for", ff.name, "instance", n)
 		return err
@@ -659,6 +664,17 @@ func (ff *flowFunction) updateReportedState() {
 func (scheduler *scheduler) setCoreByIndex(i int) {
 	scheduler.cores[i].isfree = true
 	scheduler.usedCores--
+}
+
+func (scheduler *scheduler) getCoreNumaNode(node int) (int, int, error) {
+	for i := range scheduler.cores {
+		if scheduler.cores[i].isfree == true  && scheduler.cores[i].numaNode == node {
+			scheduler.cores[i].isfree = false
+			scheduler.usedCores++
+			return scheduler.cores[i].id, i, nil
+		}
+	}
+	return 0, 0, common.WrapWithNFError(nil, "Requested number of cores in a numa node isn't enough.", common.NotEnoughCores)
 }
 
 func (scheduler *scheduler) getCore() (int, int, error) {
