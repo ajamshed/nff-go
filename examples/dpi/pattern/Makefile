@@ -6,4 +6,4 @@ PATH_TO_MK = ../../../mk
 IMAGENAME = dpi
 
 pattern:
-	go install
+	go install -tags hyperscan_v4

@@ -16,7 +16,7 @@ export GO_COMPILE_FLAGS=-gcflags '-N -l'
 endif
 
 $(EXECUTABLES) : % : %.go
-	go build $(GO_COMPILE_FLAGS) $< $(COMMON_FILES)
+	go build -tags hyperscan_v4 $(GO_COMPILE_FLAGS) $< $(COMMON_FILES)
 
 ifndef NOCHECK_PKTGEN
 all: check-pktgen

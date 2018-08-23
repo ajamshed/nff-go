@@ -9,7 +9,7 @@ EXECUTABLES = dpi
 dpi: ../pattern gohs
 
 gohs:
-	go get -v github.com/flier/gohs/hyperscan
+	go get -tags hyperscan_v4 -v github.com/flier/gohs/hyperscan
 
 COMMON_FILES = handlers.go
 
